@@ -1,1 +1,3 @@
-https://trello.com/invite/b/iJW4MgCA/4a7211e27ad71563400fd8b3826056ad/tedx-app
+generale: https://trello.com/invite/b/iJW4MgCA/4a7211e27ad71563400fd8b3826056ad/tedx-app
+
+release plan: https://trello.com/invite/b/orC44cxX/a741e5aefe49953941a0ab79a8d34feb/mytedx-release-plan
