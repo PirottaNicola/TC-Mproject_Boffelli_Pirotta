@@ -1,47 +1,25 @@
 import 'package:flutter/material.dart';
+import 'talk_repository.dart';
+import 'models/talk.dart';
 
-void main() {
-  runApp(MyApp());
-}
+void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'MyTEDx',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        primarySwatch: Colors.red,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'MyTEDx'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
 
   final String title;
 
@@ -50,68 +28,112 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  final TextEditingController _controller = TextEditingController();
+  Future<List<Talk>> _talks; //la parola chiave Future indica che quel widget verrà popolato in seguito
+  int page = 1;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  void _getTalksByTag() async { //metodo asincrono
+    setState(() { //refresha la pagina
+      _talks = getTalksByTag(_controller.text, page); //_talks riceverà il testo e il numero di pagine al quale sono arrivato. 
     });
   }
 
   @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+  Widget build(BuildContext context) { //build è il metodo che costruisce l'interfaccia grafica
+    return MaterialApp(
+      title: 'My TedX App',
+      theme: ThemeData(
+        primarySwatch: Colors.red,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('My TEDx App'),
+        ),
+        body: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(8.0),
+          child: (_talks == null)
+              ? Column( //se _talks==null ritorna questo widget
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    TextField(
+                      controller: _controller,
+                      decoration:
+                          InputDecoration(hintText: 'Enter your favorite talk'),
+                    ),
+                    RaisedButton(
+                      child: Text('Search by tag'),
+                      onPressed: () {
+                        page = 1;
+                        _getTalksByTag();
+                      },
+                    ),
+                  ],
+                )
+              : FutureBuilder<List<Talk>>(  //se _talks non è null, ritorna questo widget
+                  future: _talks,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return Scaffold( //container ad alto livello
+                          appBar: AppBar( //con una app bar
+                            title: Text("#" + _controller.text), //contenente il tag cercato
+                          ),
+                          body: ListView.builder(
+                            itemCount: snapshot.data.length,
+                            itemBuilder: (context, index) {
+                              return GestureDetector(
+                                child: ListTile(
+                                    subtitle:
+                                        Text(snapshot.data[index].mainSpeaker),
+                                    title: Text(snapshot.data[index].title)),
+                                onTap: () => Scaffold.of(context).showSnackBar(//quando clicco su un elemento mi mostra i dettagli
+                                    SnackBar(content: Text(snapshot.data[index].details))),
+                              );
+                            },
+                          ),
+                          floatingActionButtonLocation:
+                              FloatingActionButtonLocation.centerDocked,
+                          floatingActionButton: FloatingActionButton(
+                            child: const Icon(Icons.arrow_drop_down),
+                            onPressed: () {
+                              if (snapshot.data.length >= 6) {
+                                page = page + 1;
+                                _getTalksByTag();
+                              }
+                            },
+                          ),
+                          bottomNavigationBar: BottomAppBar(
+                            child: new Row(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: <Widget>[
+                                IconButton(
+                                  icon: Icon(Icons.home),
+                                  onPressed: () {
+                                    setState(() {//fa scattare un redraw ma prima azzera la lista, riportandomi nella condizione iniziale
+                                      _talks = null;
+                                      page = 1;
+                                      _controller.text = "";
+                                    });
+                                  },
+                                )
+                              ],
+                            ),
+                          ));
+                    } else if (snapshot.hasError) {
+                      return Text("${snapshot.error}");
+                    }
+
+                    return CircularProgressIndicator();
+                  },
+                ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
